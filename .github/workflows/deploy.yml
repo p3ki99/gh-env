@@ -1,0 +1,41 @@
+name: Deployment
+on:
+  push:
+    branches:
+      - main
+      - dev
+env:
+  MONGODB_DB_NAME: gha-demo # available in all jobs and steps unless job or step overrides it
+jobs:
+  test:
+    env:
+      MONGODB_CLUSTER_ADDRESS: testingcluster.69inel3.mongodb.net
+      MONGODB_USERNAME: p3ki99
+      MONGODB_PASSWORD: CuFS7YenP9IweRuM
+      PORT: 8080
+    environment: testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Code
+        uses: actions/checkout@v3
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: npm-deps-${{ hashFiles('**/package-lock.json') }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Run server
+        run: npm start & npx wait-on http://127.0.0.1:$PORT # $PORT - on linux machine - shell
+      - name: Run tests
+        run: npm test
+      - name: Output information
+        run: echo "MONGODB_USERNAME ${{ env.MONGODB_USERNAME }}" # moze isto i preko $ENV_NAME
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output information
+        run: |
+          echo "MONGODB_USERNAME: ${{ env.MONGODB_USERNAME }}" # ovo ne postoji u ovom jobu
+          echo "MONGODB_USERNAME: ${{ env.MONGODB_DB_NAME }}"
